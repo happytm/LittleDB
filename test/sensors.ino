@@ -3,7 +3,7 @@
 #include "FS.h"
 #include <LITTLEFS.h>
 #include <LittleDB.h>
-#include "ESPDateTime.h" // Available at https://github.com/mcxiaoke/ESPDateTime
+#include "ESPDateTime.h"
 
 const char* ssid = "";
 const char* password = "";
@@ -14,7 +14,7 @@ String Hour, Minute, Seconds, Day, Month, Year;
 void setupDateTime() {
   
  // setup this after wifi connected
-  // you can use custom timeZone,server and timeout
+ // you can use custom timeZone,server and timeout
    
    DateTime.setTimeZone(Timezone);   // Eastern USA Time Zone (-5).
    DateTime.setServer("us.pool.ntp.org");
@@ -75,11 +75,13 @@ void setup() {
  
   delay(1000);
   LITTLEFS.format();
+  
   execQuery("create db test1");
   execQuery("use db test1");
   
-  //String schem = "id id, age int, ready tinyint, name text";
-  String schem = "id id, date text, time text, location text, temperature int, humidity int, pressure int, sinlgleDigit tinyint";
+  //execQuery("drop table test_tbl");
+  
+  String schem = "id id, date id, time id, location id, temperature int, humidity int, pressure int, sinlgleDigit tinyint";
   schem.trim();
   execQuery("create table test_tbl (" + schem + ")");
   
@@ -91,14 +93,13 @@ void setup() {
   insert += ",";
   insert += DateTime.format(DateFormatter::TIME_ONLY);
   insert += ", ";
-  insert += 
   insert += "Livingroom";
   insert += ", ";
   insert += 59;
   insert += ", ";
   insert += 40;
   insert += ", ";
-  insert += 988;
+  insert += 250;
   insert += ")";
 
   
@@ -115,14 +116,13 @@ void setup() {
   insert += ",";
   insert += DateTime.format(DateFormatter::TIME_ONLY);
   insert += ", ";
-  insert += 
   insert += "Bedroom";
   insert += ", ";
   insert += 60;
   insert += ", ";
   insert += 41;
   insert += ", ";
-  insert += 989;
+  insert += 251;
   insert += ")";
   
   
@@ -139,14 +139,13 @@ void setup() {
   insert += ",";
   insert += DateTime.format(DateFormatter::TIME_ONLY);
   insert += ", ";
-  insert += 
   insert += "Kitchen";
   insert += ", ";
   insert += 61;
   insert += ", ";
   insert += 42;
   insert += ", ";
-  insert += 990;
+  insert += 252;
   insert += ")";
   
   
@@ -163,14 +162,13 @@ void setup() {
   insert += ",";
   insert += DateTime.format(DateFormatter::TIME_ONLY);
   insert += ", ";
-  insert += 
   insert += "Bathroom";
   insert += ", ";
   insert += 62;
   insert += ", ";
   insert += 43;
   insert += ", ";
-  insert += 991;
+  insert += 253;
   insert += ")";
   
   
@@ -206,8 +204,7 @@ void setup() {
   execQuery(select);
   //printSelectData();
 
-  get_text();
-  get_int();
+  get_data();
   
   
   id++; 
@@ -219,8 +216,7 @@ void setup() {
   execQuery(select);
   //printSelectData();
 
-  get_text();
-  get_int();
+  get_data();
   
   id++;
   //String Date = "2021-05-06";
@@ -231,8 +227,7 @@ void setup() {
   execQuery(select);
   //printSelectData();
 
-  get_text();
-  get_int();
+  get_data();
   
   
   id++;
@@ -244,8 +239,7 @@ void setup() {
   execQuery(select);
   //printSelectData();
 
-  get_text();
-  get_int();
+  get_data();
   Serial.println("=======================================");
   
   
@@ -270,8 +264,8 @@ void setup() {
   String tblPath = prefix + CONNECTED_DB + "/test_tbl";
   File tblFile = LITTLEFS.open(tblPath);
   while(tblFile.available()){
-    //Serial.print(tblFile.read(), HEX);
-    //Serial.print(" ");
+    Serial.print(tblFile.read(), HEX);
+    Serial.print(" ");
   }
   Serial.println();
   listDir(LITTLEFS, "/", 2);
@@ -284,16 +278,13 @@ void loop() {
   //setupDateTime();
 }
 
-void get_text() {
+void get_data() {
   String date = getText(selectData, "date");
   Serial.print("Date:  "); Serial.println(date); 
   String time = getText(selectData, "time");
   Serial.print("time:  "); Serial.println(time); 
   String location = getText(selectData, "location");
   Serial.print("Location:  "); Serial.println(location); 
-}
-
-void get_int() {
   int32_t temperature = getInt32(selectData, "temperature");
   Serial.print("Temperature:  "); Serial.println(temperature); 
   int32_t humidity = getInt32(selectData, "humidity");
