@@ -1,43 +1,14 @@
-#include <Arduino.h>
-#include <WiFi.h>
-#include "FS.h"
-#include <LITTLEFS.h>
-#include <LittleDB.h>
-#include "ESPDateTime.h"
+#include <Arduino.h>  // Arduino built in
+#include <WiFi.h>     // Arduino built in
+#include "FS.h"       // Arduino built in
+#include <LITTLEFS.h> // Arduino built in
+#include <LittleDB.h> // https://github.com/pouriamoosavi/LittleDB
+#include <ezTime.h>   // Arduino built in
 
 const char* ssid = "";
 const char* password = "";
+String Timestamp, Date, Time;
 
-int Timezone = -5; // Eastern USA Time Zone (-5).
-String Timestamp, Hour, Minute, Seconds, Day, Month, Year;
-
-
-void setupDateTime() {
-  
- // setup this after wifi connected
- // you can use custom timeZone,server and timeout
-   
-   DateTime.setTimeZone(Timezone);   // Eastern USA Time Zone (-5).
-   DateTime.setServer("us.pool.ntp.org");
-   DateTime.begin();  
-  // DateTime.begin(15 * 1000);  // NTP time update frequency.
-   
-  
-  if (!DateTime.isTimeValid()) {
-   Serial.println("Failed to get time from server.");
-  }
-
-  delay(1000);
-  
-  Serial.println("--------------------");
-  time_t t = DateTime.now();
-  Serial.println(DateFormatter::format("%m%d%y%H%M%S", t));
-  Timestamp = DateFormatter::format("%m%d%y%H%M%S", t);
-  Serial.println("--------------------");
-}
-
-
-  
 void setup() {
   Serial.begin(115200);
   LITTLEFS.begin(true);
@@ -51,8 +22,23 @@ void setup() {
     }
 
   Serial.println("\nConnected to network");
-  setupDateTime();
- 
+  waitForSync();
+
+  Serial.println("UTC: " + UTC.dateTime());
+  
+  Timezone America;
+  America.setLocation("America/New_York");
+  //America.setPosix("EST--5EDT,M3.2.0,M11.1.0/2");
+  Serial.println("EST time: " + America.dateTime());
+  Serial.println("Time now is:" + America.dateTime("l ~t~h~e jS ~o~f F Y, g:i A") );
+                                          //Saturday the 25th of August 2018, 2:23 PM
+  Serial.println(" " + America.dateTime("mdyHi") );                                       
+  Timestamp = " " + America.dateTime("mdyHi");
+  Serial.println(" " + America.dateTime("mdy") );                                       
+  Date = " " + America.dateTime("mdy");
+  Serial.println(" " + America.dateTime("Hi") );                                       
+  Time = " " + America.dateTime("Hi");
+  
   delay(1000);
   LITTLEFS.format();
 
@@ -86,9 +72,9 @@ void setup() {
   String insert = "insert into test_tbl values (";
   insert += Timestamp;
   insert += ",";
-  insert += DateTime.format(DateFormatter::DATE_ONLY);
+  insert += Date;
   insert += ",";
-  insert += DateTime.format(DateFormatter::TIME_ONLY);
+  insert += Time;
   insert += ", ";
   insert += "Livingroom";
   insert += ", ";
@@ -104,9 +90,9 @@ void setup() {
   insert = "insert into test_tbl values (";
   insert += Timestamp;
   insert += ",";
-  insert += DateTime.format(DateFormatter::DATE_ONLY);
+  insert += Date;
   insert += ",";
-  insert += DateTime.format(DateFormatter::TIME_ONLY);
+  insert += Time;
   insert += ", ";
   insert += "B";
   insert += ", ";
@@ -122,9 +108,9 @@ void setup() {
   insert = "insert into test_tbl values (";
   insert += Timestamp;
   insert += ",";
-  insert += DateTime.format(DateFormatter::DATE_ONLY);
+  insert += Date;
   insert += ",";
-  insert += DateTime.format(DateFormatter::TIME_ONLY);
+  insert += Time;
   insert += ", ";
   insert += "Bedroom";
   insert += ", ";
@@ -140,9 +126,9 @@ void setup() {
   insert = "insert into test_tbl values (";
   insert += Timestamp;
   insert += ",";
-  insert += DateTime.format(DateFormatter::DATE_ONLY);
+  insert += Date;
   insert += ",";
-  insert += DateTime.format(DateFormatter::TIME_ONLY);
+  insert += Time;
   insert += ", ";
   insert += "Kitchen";
   insert += ", ";
@@ -158,9 +144,9 @@ void setup() {
   insert = "insert into test_tbl values (";
   insert += Timestamp;
   insert += ",";
-  insert += DateTime.format(DateFormatter::DATE_ONLY);
+  insert += Date;
   insert += ",";
-  insert += DateTime.format(DateFormatter::TIME_ONLY);
+  insert += Time;
   insert += ", ";
   insert += "Bathroom";
   insert += ", ";
@@ -181,7 +167,7 @@ void setup() {
   get_data();
   Serial.println("=======================================");
 
-  String Date = "2021-05-08";
+  String Date = "050821";
   select = "select from test_tbl where date=";
   select = select + Date;
   res = execQuery(select);
@@ -195,7 +181,7 @@ void setup() {
   get_data();
   Serial.println("=======================================");
   
-  id = "050821130022";
+  id = Timestamp;
   select = "select from test_tbl where id=";
   select = select + id;
   res = execQuery(select);
@@ -216,12 +202,15 @@ void setup() {
   Serial.println();
   listDir(LITTLEFS, "/", 2);
 
-  
-}
+ }  // End of Setup
 
+
+
+ 
 void loop() {
 
-  //setupDateTime();
+  events();
+
 }
 
 void get_data() {
