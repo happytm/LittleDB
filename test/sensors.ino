@@ -9,7 +9,8 @@ const char* ssid = "";
 const char* password = "";
 
 int Timezone = -5; // Eastern USA Time Zone (-5).
-String Hour, Minute, Seconds, Day, Month, Year;
+String Timestamp, Hour, Minute, Seconds, Day, Month, Year;
+
 
 void setupDateTime() {
   
@@ -28,32 +29,11 @@ void setupDateTime() {
 
   delay(1000);
   
-  Serial.println(DateTime.toString());
-  Serial.println(DateTime.toISOString());
-  Serial.println(DateTime.toUTCString());
-  Serial.println("--------------------");
-  Serial.println(DateTime.format(DateFormatter::COMPAT));
-  Serial.println(DateTime.format(DateFormatter::DATE_ONLY));
-  Serial.println(DateTime.format(DateFormatter::TIME_ONLY));
-  Serial.println("--------------------");
-  DateTimeParts p = DateTime.getParts();
-  Serial.printf("%04d/%02d/%02d %02d:%02d:%02d %ld %+05d\n", p.getYear(),
-                p.getMonth(), p.getMonthDay(), p.getHours(), p.getMinutes(),
-                p.getSeconds(), p.getTime(), p.getTimeZone());
-
-  Hour = p.getHours();
-  Minute = p.getMinutes();
-  Seconds = p.getSeconds();
-  Day = p.getMonthDay();
-  Month = p.getMonth();
-  Year = p.getYear();
-  Timezone = p.getTimeZone();
-  
   Serial.println("--------------------");
   time_t t = DateTime.now();
-  Serial.println(DateFormatter::format("%Y/%m/%d %H:%M:%S", t));
-  Serial.println(DateFormatter::format("%x - %I:%M %p", t));
-  Serial.println(DateFormatter::format("Now it's %F %I:%M%p.", t));
+  Serial.println(DateFormatter::format("%m%d%y%H%M%S", t));
+  Timestamp = DateFormatter::format("%m%d%y%H%M%S", t);
+  Serial.println("--------------------");
 }
 
 
@@ -75,19 +55,36 @@ void setup() {
  
   delay(1000);
   LITTLEFS.format();
+
+  int8_t res;
   
-  execQuery("create db test1");
-  execQuery("use db test1");
+  res = execQuery("create db test_db");
+  res = execQuery("use db test_db");
   
-  //execQuery("drop table test_tbl");
-  
-  String schem = "id id, date id, time id, location id, temperature int, humidity int, pressure int, sinlgleDigit tinyint";
+  res = execQuery("drop table test_tbl");
+ 
+  String schem = "id id, date text, time text, location text, temperature tinyint, humidity tinyint, pressure tinyint, sinlgleDigit tinyint";
   schem.trim();
-  execQuery("create table test_tbl (" + schem + ")");
+  res = execQuery("create table test_tbl (" + schem + ")");
+
+  String tblPath = "/test_db/test_tbl";
+  String schemPath = "/test_db/s.test_tbl";
+
+  File schemFile = LITTLEFS.open(schemPath);
+  if(!schemFile || schemFile.isDirectory()){
+   
+  }
+  if(!schemFile.available()) {
+    
+  }
+
+  String schemFromFile = schemFile.readString();
+  schemFromFile.trim();
   
-  int8_t it;
+  schemFile.close();
+
   String insert = "insert into test_tbl values (";
-  insert += 1;
+  insert += Timestamp;
   insert += ",";
   insert += DateTime.format(DateFormatter::DATE_ONLY);
   insert += ",";
@@ -101,16 +98,29 @@ void setup() {
   insert += ", ";
   insert += 250;
   insert += ")";
-
   
-  it = execQuery(insert);
-  //Serial.println(insertValues);
-  //Serial.print("it: ");
-  //Serial.println(it);
-  //printInsertData();
+  res = execQuery(insert);
   
   insert = "insert into test_tbl values (";
-  insert += 2;
+  insert += Timestamp;
+  insert += ",";
+  insert += DateTime.format(DateFormatter::DATE_ONLY);
+  insert += ",";
+  insert += DateTime.format(DateFormatter::TIME_ONLY);
+  insert += ", ";
+  insert += "B";
+  insert += ", ";
+  insert += 60;
+  insert += ", ";
+  insert += 41;
+  insert += ", ";
+  insert += 251;
+  insert += ")";
+  
+  res = execQuery(insert);
+  
+  insert = "insert into test_tbl values (";
+  insert += Timestamp;
   insert += ",";
   insert += DateTime.format(DateFormatter::DATE_ONLY);
   insert += ",";
@@ -125,15 +135,10 @@ void setup() {
   insert += 251;
   insert += ")";
   
-  
-  it = execQuery(insert);
-  //Serial.println(insertValues);
-  //Serial.print("it: ");
-  //Serial.println(it);
-  //printInsertData();
+  res = execQuery(insert);
 
   insert = "insert into test_tbl values (";
-  insert += 3;
+  insert += Timestamp;
   insert += ",";
   insert += DateTime.format(DateFormatter::DATE_ONLY);
   insert += ",";
@@ -147,16 +152,11 @@ void setup() {
   insert += ", ";
   insert += 252;
   insert += ")";
-  
-  
-  it = execQuery(insert);
-  //Serial.println(insertValues);
-  //Serial.print("it: ");
-  //Serial.println(it);
-  //printInsertData();
-  
+
+  res = execQuery(insert);
+
   insert = "insert into test_tbl values (";
-  insert += 4;
+  insert += Timestamp;
   insert += ",";
   insert += DateTime.format(DateFormatter::DATE_ONLY);
   insert += ",";
@@ -171,97 +171,43 @@ void setup() {
   insert += 253;
   insert += ")";
   
-  
-  it = execQuery(insert);
-  //Serial.println(insertValues);
-  //Serial.print("it: ");
-  //Serial.println(it);
-  //printInsertData();
-  
-  listDir(LITTLEFS, "/", 2);
-/*
-  execQuery("update test_tbl set name=text-12 where id=1");
-  execQuery("update test_tbl set name=text-13 where id=1");
+  res = execQuery(insert);
 
-  Serial.println("Befor compact");
-  listDir(LITTLEFS, "/", 2);
-  delay(2000);
   Serial.println("=======================================");
-
-  int8_t ct = execQuery("compact table test_tbl");
-  Serial.print("ct: ");
-  Serial.println(ct);
-
-  listDir(LITTLEFS, "/", 2);
-  */
-  delay(2000);
-  
-  int id = 1;
+  String id = Timestamp;
   String select = "select from test_tbl where id=";
   select = select + id;
-  //Serial.println(select);
-  Serial.println("=======================================");
-  execQuery(select);
-  //printSelectData();
-
+  res = execQuery(select);
   get_data();
+  Serial.println("=======================================");
+
+  String Date = "2021-05-08";
+  select = "select from test_tbl where date=";
+  select = select + Date;
+  res = execQuery(select);
+  get_data();
+  Serial.println("=======================================");
+ 
+  String Room = "Bedroom";
+  select = "select from test_tbl where location=";
+  select = select + Room;
+  res = execQuery(select);
+  get_data();
+  Serial.println("=======================================");
   
-  
-  id++; 
-  //String room = "Livingroom";
+  id = "050821130022";
   select = "select from test_tbl where id=";
   select = select + id;
-  //Serial.println(select);
-  Serial.println("=======================================");
-  execQuery(select);
-  //printSelectData();
-
-  get_data();
-  
-  id++;
-  //String Date = "2021-05-06";
-  select = "select from test_tbl where id=";
-  select = select + id;
-  //Serial.println(select);
-  Serial.println("=======================================");
-  execQuery(select);
-  //printSelectData();
-
-  get_data();
-  
-  
-  id++;
-  //int Temperature = 62;
-  select = "select from test_tbl where id=";
-  select = select + id;
-  //Serial.println(select);
-  Serial.println("=======================================");
-  execQuery(select);
-  //printSelectData();
-
+  res = execQuery(select);
   get_data();
   Serial.println("=======================================");
   
-  
-/*
-  it = execQuery("insert into test_tbl values (1234567890abcde, 10, 1, text-1234567890abcde)");
-  Serial.print("it: ");
-  Serial.println(it);
+  delay(2000);
 
-  int8_t it1 = execQuery("insert into test_tbl values (1234567890abc, 20, 1, text-1234567890abc)");
-  Serial.print("it1: ");
-  Serial.println(it1);
-
-  int8_t it2 = execQuery("insert into test_tbl values (1234567, 8, 30, text-1234567)");
-  Serial.print("it2: ");
-  Serial.println(it2);
+  //res = execQuery("update test_tbl set location=livingroom where id=1234567890abc");
+  //res = execQuery("delete from test_tbl where id=1234567890abc");
   
-  int8_t it3 = execQuery("insert into test_tbl values (abcdef, 40, 1, text-abcdef)");
-  Serial.print("it3: ");
-  Serial.println(it3);
-  */
-  
-  String tblPath = prefix + CONNECTED_DB + "/test_tbl";
+  tblPath = prefix + CONNECTED_DB + "/test_tbl";
   File tblFile = LITTLEFS.open(tblPath);
   while(tblFile.available()){
     Serial.print(tblFile.read(), HEX);
@@ -291,4 +237,4 @@ void get_data() {
   Serial.print("Humidity:  "); Serial.println(humidity);
   int32_t pressure = getInt32(selectData, "pressure");
   Serial.print("Pressure:  "); Serial.println(pressure);
-}
+ }
